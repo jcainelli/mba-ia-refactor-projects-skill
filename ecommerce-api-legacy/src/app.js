@@ -1,14 +1,29 @@
 const express = require('express');
-const AppManager = require('./AppManager');
-const { config } = require('./utils');
+const { settings } = require('./config/settings');
+const { initDb } = require('./config/database');
+const checkoutRoutes = require('./views/checkoutRoutes');
+const reportRoutes = require('./views/reportRoutes');
+const userRoutes = require('./views/userRoutes');
+const { errorHandler } = require('./middlewares/errorHandler');
 
-const app = express();
-app.use(express.json());
+async function bootstrap() {
+  await initDb();
 
-const manager = new AppManager();
-manager.initDb();
-manager.setupRoutes(app);
+  const app = express();
+  app.use(express.json());
 
-app.listen(config.port, () => {
-    console.log(`Frankenstein LMS rodando na porta ${config.port}...`);
+  app.use('/api/checkout', checkoutRoutes);
+  app.use('/api/admin', reportRoutes);
+  app.use('/api/users', userRoutes);
+
+  app.use(errorHandler);
+
+  app.listen(settings.port, () => {
+    console.log(`LMS API running on port ${settings.port}`);
+  });
+}
+
+bootstrap().catch((err) => {
+  console.error('Bootstrap failure:', err);
+  process.exit(1);
 });
